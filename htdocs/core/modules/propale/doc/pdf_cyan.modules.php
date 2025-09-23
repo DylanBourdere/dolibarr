@@ -703,7 +703,6 @@ class pdf_cyan extends ModelePDFPropales
 
 							$previous_align = array();
 							$previous_align['align'] = $this->cols['desc']['content']['align'];
-							$original_desc = $object->lines[$i]->desc;
 
 							if ($object->lines[$i]->qty < 0) {
 								$langs->load("subtotals");
@@ -718,9 +717,7 @@ class pdf_cyan extends ModelePDFPropales
 							$this->printColDescContent($pdf, $curY, 'desc', $object, $i, $outputlangs, $hideref, $hidedesc);
 							$this->setAfterColsLinePositionsData('desc', $pdf->GetY(), $pdf->getPage());
 
-							$pdf->SetTextColor(0, 0, 0);
-							$this->cols['desc']['content']['align'] = $previous_align['align'];
-							$object->lines[$i]->desc = $original_desc;
+							$this->cols['desc']['content']['align'] = $previous_align['align']; // Re align if we printed a subtotal ligne
 						}
 					}
 
