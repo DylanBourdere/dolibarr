@@ -676,18 +676,26 @@ class pdf_cyan extends ModelePDFPropales
 							$pdf->rollbackTransaction(true);
 
 							$pdf->SetFillColor($bg_color[0], $bg_color[1], $bg_color[2]);
-							if ($page_after == $pdf->getPage()) {
-								$pdf->Rect($this->marge_gauche, $curY, $this->page_largeur - $this->marge_droite - $this->marge_gauche, $y_after - $curY, 'F');
+
+							$save_page = $pdf->getPage();
+							$save_x = $pdf->GetX();
+							$save_y = $curY;
+
+							if ($page_after == $save_page) {
+								$pdf->SetXY($this->marge_gauche, $curY);
+								$pdf->MultiCell($this->page_largeur - $this->marge_droite - $this->marge_gauche, max(0, $y_after - $curY), '', 0, '', true);
 							} else {
-								// Fin de page courante
-								$pdf->Rect($this->marge_gauche, $curY, $this->page_largeur - $this->marge_droite - $this->marge_gauche, $pdf->getPageHeight() - $pdf->getBreakMargin() - $curY, 'F');
-								// Début de la page suivante
+								$pdf->SetXY($this->marge_gauche, $curY);
+								$pdf->MultiCell($this->page_largeur - $this->marge_droite - $this->marge_gauche, $pdf->getPageHeight() - $pdf->getBreakMargin() - $curY, '', 0, '', true);
+
 								$pdf->setPage($page_after);
-								$pdf->Rect($this->marge_gauche, $pdf->getMargins()['top'], $this->page_largeur - $this->marge_droite - $this->marge_gauche, $y_after - $pdf->getMargins()['top'], 'F');
-								$pdf->setPage($page_after - 1);
+								$pdf->SetXY($this->marge_gauche, $pdf->getMargins()['top']);
+								$pdf->MultiCell($this->page_largeur - $this->marge_droite - $this->marge_gauche, max(0, $y_after - $pdf->getMargins()['top']), '', 0, '', true);
+
+								$pdf->setPage($save_page);
 							}
 
-							if ($colorislight) {
+							if ($colorislight) { 
 								$pdf->SetTextColor(0, 0, 0);
 							} else {
 								$pdf->SetTextColor(255, 255, 255);
@@ -695,6 +703,8 @@ class pdf_cyan extends ModelePDFPropales
 
 							$previous_align = array();
 							$previous_align['align'] = $this->cols['desc']['content']['align'];
+							$original_desc = $object->lines[$i]->desc;
+
 							if ($object->lines[$i]->qty < 0) {
 								$langs->load("subtotals");
 								$object->lines[$i]->desc = $langs->trans("SubtotalOf", $object->lines[$i]->desc);
@@ -707,7 +717,10 @@ class pdf_cyan extends ModelePDFPropales
 
 							$this->printColDescContent($pdf, $curY, 'desc', $object, $i, $outputlangs, $hideref, $hidedesc);
 							$this->setAfterColsLinePositionsData('desc', $pdf->GetY(), $pdf->getPage());
+
+							$pdf->SetTextColor(0, 0, 0);
 							$this->cols['desc']['content']['align'] = $previous_align['align'];
+							$object->lines[$i]->desc = $original_desc;
 						}
 					}
 
