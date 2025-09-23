@@ -686,6 +686,57 @@ class pdf_cyan extends ModelePDFPropales
 						}
 					}
 
+					if ($this->getColumnStatus('desc')) {
+						if ($object->lines[$i]->special_code != SUBTOTALS_SPECIAL_CODE) {
+							$this->printColDescContent($pdf, $curY, 'desc', $object, $i, $outputlangs, $hideref, $hidedesc);
+							$this->setAfterColsLinePositionsData('desc', $pdf->GetY(), $pdf->getPage());
+						} else {
+							$bg_color = colorStringToArray(getDolGlobalString("SUBTOTAL_BACK_COLOR_LEVEL_".abs($object->lines[$i]->qty)));
+							$colorislight = colorIsLight(implode(',', $bg_color));
+
+							$pdf->startTransaction();
+							$pdf->SetXY($pdf->GetX(), $curY);
+							$this->printColDescContent($pdf, $curY, 'desc', $object, $i, $outputlangs, $hideref, $hidedesc);
+							$page_after = $pdf->getPage();
+							$y_after = $pdf->GetY();
+							$pdf->rollbackTransaction(true);
+
+							$pdf->SetFillColor($bg_color[0], $bg_color[1], $bg_color[2]);
+							if ($page_after == $pdf->getPage()) {
+								$pdf->Rect($this->marge_gauche, $curY, $this->page_largeur - $this->marge_droite - $this->marge_gauche, $y_after - $curY, 'F');
+							} else {
+								// Fin de page courante
+								$pdf->Rect($this->marge_gauche, $curY, $this->page_largeur - $this->marge_droite - $this->marge_gauche, $pdf->getPageHeight() - $pdf->getBreakMargin() - $curY, 'F');
+								// Début de la page suivante
+								$pdf->setPage($page_after);
+								$pdf->Rect($this->marge_gauche, $pdf->getMargins()['top'], $this->page_largeur - $this->marge_droite - $this->marge_gauche, $y_after - $pdf->getMargins()['top'], 'F');
+								$pdf->setPage($page_after - 1);
+							}
+
+							if ($colorislight) {
+								$pdf->SetTextColor(0, 0, 0);
+							} else {
+								$pdf->SetTextColor(255, 255, 255);
+							}
+
+							$previous_align = array();
+							$previous_align['align'] = $this->cols['desc']['content']['align'];
+							if ($object->lines[$i]->qty < 0) {
+								$langs->load("subtotals");
+								$object->lines[$i]->desc = $langs->trans("SubtotalOf", $object->lines[$i]->desc);
+								if ($previous_align['align'] == 'L') {
+									$this->cols['desc']['content']['align'] = 'R';
+								} elseif ($previous_align['align'] == 'R') {
+									$this->cols['desc']['content']['align'] = 'L';
+								}
+							}
+
+							$this->printColDescContent($pdf, $curY, 'desc', $object, $i, $outputlangs, $hideref, $hidedesc);
+							$this->setAfterColsLinePositionsData('desc', $pdf->GetY(), $pdf->getPage());
+							$this->cols['desc']['content']['align'] = $previous_align['align'];
+						}
+					}
+
 					$afterPosData = $this->getMaxAfterColsLinePositionsData();
 					$pdf->setPage($pageposbefore);
 					$pdf->setTopMargin($this->marge_haute);
